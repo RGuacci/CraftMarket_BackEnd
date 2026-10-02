@@ -21,7 +21,7 @@ return [
     'lowercase_usernames' => true,
 
 
-    'home' => '/home',
+    'home' => '/',
 
 
 
@@ -44,7 +44,7 @@ return [
 
 
 
-    'views' => false,
+    'views' => true,
 
 
 

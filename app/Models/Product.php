@@ -5,10 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable(['name', 'description', 'price', 'stock', 'user_id'])]
+#[Fillable(['name', 'slug', 'description', 'price', 'stock', 'user_id'])]
 
 class Product extends Model
-{
+
+{   
+   public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
+ 
+
     public function user()
     {
         return $this->belongsTo(User::class);

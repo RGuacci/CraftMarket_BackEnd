@@ -21,6 +21,7 @@ class CategorySeeder extends Seeder
             'Sport',
             'Videogiochi',
             'Accessori',
+            'Animali',
         ];
 
         foreach ($categories as $category) {

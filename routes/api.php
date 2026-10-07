@@ -18,7 +18,8 @@ Route::get('/categories', [CategoryController::class, 'index']);
 
 // Operazioni riservate
 Route::middleware('auth:sanctum')->group(function () {
-
+    Route::get('/seller/products', [ProductController::class, 'myProducts']); 
+   
     Route::post('/products', [ProductController::class, 'store'])
         ->middleware('can:create,' . Product::class);
 

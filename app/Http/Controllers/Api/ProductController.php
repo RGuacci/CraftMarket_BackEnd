@@ -15,7 +15,7 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::with('user', 'categories', 'images')->get();
+        $products = Product::with('user', 'categories', 'images')->latest()->paginate(12);
         return response()->json($products);
     }
 
@@ -182,5 +182,12 @@ class ProductController extends Controller
         return response()->json([
             'message' => 'Prodotto eliminato correttamente.'
         ]);
+    }
+    
+    // Recupero i prodotti collegati all'utente
+    public function myProducts()
+    {
+        $products = auth()->user()->products()->with(['categories','images'])->latest()->get();
+        return response()->json($products);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ProductResource;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,7 +18,7 @@ class ProductController extends Controller
     public function index()
     {
         $products = Product::with('user', 'categories', 'images')->latest()->paginate(12);
-        return response()->json($products);
+        return ProductResource::collection($products);
     }
 
     /**
@@ -83,7 +84,7 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load(['user', 'categories', 'images']);
-        return response()->json($product);
+        return new ProductResource($product);
     }
 
     /**

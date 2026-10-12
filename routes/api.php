@@ -34,5 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //  carrello
      Route::get('/cart', [CartController::class, 'index']);
      
-      Route::post('/cart/products', [CartController::class, 'store']);    
+      Route::post('/cart/products', [CartController::class, 'store']);
+      
+      Route::patch('/cart/products/{productId}',[CartController::class, 'update']);
 });

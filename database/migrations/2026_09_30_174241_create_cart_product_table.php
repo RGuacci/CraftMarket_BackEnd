@@ -12,9 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('cart_product', function (Blueprint $table) {
-           $table->unsignedInteger('quantity');
+           $table->unsignedInteger('quantity')->default(1);
            $table->foreignId('cart_id')->constrained()->cascadeOnDelete();
            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+           $table->primary(['cart_id', 'product_id']);
         });
     }
 

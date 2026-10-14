@@ -17,6 +17,12 @@ return new class extends Migration
             $table->string('status')->default('pending');
             $table->decimal('total', 10, 2);
             $table->timestamps();
+            // Indirizzo di spedizione
+            $table->string('shipping_name');
+            $table->string('shipping_address');
+            $table->string('shipping_city');
+            $table->string('shipping_postal_code', 20);
+            $table->string('shipping_country');
         });
     }
 

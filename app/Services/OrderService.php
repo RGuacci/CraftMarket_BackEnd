@@ -11,10 +11,10 @@ use Illuminate\Validation\ValidationException;
 
 class OrderService
 {
-    public function createPendingOrder(User $user): Order
+    public function createPendingOrder(User $user, array $shippingData): Order
     {
         // Recupero il carrello
-        return DB::transaction(function () use ($user) {
+        return DB::transaction(function () use ($user, $shippingData) {
             $cart = $user->cart()
                 ->with('products')
                 ->first();
@@ -45,6 +45,11 @@ class OrderService
                 'user_id' => $user->id,
                 'status' => 'pending',
                 'total' => $total,
+                'shipping_name' => $shippingData['shipping_name'],
+                'shipping_address' => $shippingData['shipping_address'],
+                'shipping_city' => $shippingData['shipping_city'],
+                'shipping_postal_code' => $shippingData['shipping_postal_code'],
+                'shipping_country' => $shippingData['shipping_country'],
             ]);
 
             // Riempio la tabella order_item
@@ -65,7 +70,6 @@ class OrderService
         User $user,
         Order $order,
         string $method,
-        bool $simulateSuccess = true
     ): Order {
         if ($order->user_id !== $user->id) {
             abort(403, 'Non puoi pagare questo ordine.');
@@ -113,16 +117,14 @@ class OrderService
             }
 
             $order->update(['status' => 'paid']);
+            // Rimuovo dal carrello soltanto i prodotti acquistati
+            $productIds = $order->orderItems
+                ->pluck('product_id')
+                ->all();
 
-            $user = $order->user;
-            $user->cart?->products()->detach();
+            $order->user->cart?->products()->detach($productIds);
 
             return $order->refresh()->load('orderItems');
         });
-    }
-
-    public function __construct()
-    {
-        //
     }
 }

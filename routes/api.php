@@ -39,6 +39,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::patch('/cart/products/{productId}', [CartController::class, 'update']);
 
+    // Ordini
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{order}', [OrderController::class, 'show']);
+
     // pagamento simulato   
     Route::post('/checkout', [OrderController::class, 'checkout']);
     Route::post('/orders/{order}/pay', [OrderController::class, 'pay']);

@@ -8,6 +8,32 @@ use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
+
+    public function index(Request $request)
+    {
+        $orders = Order::where('user_id', $request->user()->id)
+            ->with('orderItems.product')
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'orders' => $orders,
+        ]);
+    }
+
+    public function show(Request $request, Order $order)
+    {
+        if ($order->user_id !== $request->user()->id) {
+            abort(403, 'Non puoi visualizzare questo ordine.');
+        }
+
+        $order->load('orderItems.product');
+
+        return response()->json([
+            'order' => $order,
+        ]);
+    }
+
     public function checkout(
         Request $request,
         OrderService $orderService
@@ -30,7 +56,7 @@ class OrderController extends Controller
             'order' => $order,
         ], 201);
     }
-    
+
     public function pay(
         Request $request,
         Order $order,

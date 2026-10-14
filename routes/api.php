@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -20,8 +21,8 @@ Route::get('/categories', [CategoryController::class, 'index']);
 // Operazioni riservate
 Route::middleware('auth:sanctum')->group(function () {
     // prodotti
-    Route::get('/seller/products', [ProductController::class, 'myProducts']); 
-   
+    Route::get('/seller/products', [ProductController::class, 'myProducts']);
+
     Route::post('/products', [ProductController::class, 'store'])
         ->middleware('can:create,' . Product::class);
 
@@ -30,11 +31,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])
         ->middleware('can:delete,product');
-        
+
     //  carrello
-     Route::get('/cart', [CartController::class, 'index']);
-     
-      Route::post('/cart/products', [CartController::class, 'store']);
-      
-      Route::patch('/cart/products/{productId}',[CartController::class, 'update']);
+    Route::get('/cart', [CartController::class, 'index']);
+
+    Route::post('/cart/products', [CartController::class, 'store']);
+
+    Route::patch('/cart/products/{productId}', [CartController::class, 'update']);
+
+    // pagamento simulato   
+    Route::post('/checkout', [OrderController::class, 'checkout']);
+    Route::post('/orders/{order}/pay', [OrderController::class, 'pay']);
 });

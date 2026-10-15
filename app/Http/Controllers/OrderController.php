@@ -12,7 +12,7 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         $orders = Order::where('user_id', $request->user()->id)
-            ->with('orderItems.product')
+            ->with('orderItems.product.images')
             ->latest()
             ->get();
 
@@ -23,11 +23,7 @@ class OrderController extends Controller
 
     public function show(Request $request, Order $order)
     {
-        if ($order->user_id !== $request->user()->id) {
-            abort(403, 'Non puoi visualizzare questo ordine.');
-        }
-
-        $order->load('orderItems.product');
+        $order->load('orderItems.product.images');
 
         return response()->json([
             'order' => $order,

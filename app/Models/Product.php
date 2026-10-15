@@ -8,13 +8,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 
 #[Fillable(['name', 'slug', 'description', 'price', 'stock', 'user_id'])]
 
 class Product extends Model
 
  {
-   use SoftDeletes;   
+   use SoftDeletes;
+   use HasFactory;   
  
    public function getRouteKeyName(): string
     {

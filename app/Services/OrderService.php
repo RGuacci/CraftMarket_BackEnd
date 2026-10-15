@@ -71,9 +71,6 @@ class OrderService
         Order $order,
         string $method,
     ): Order {
-        if ($order->user_id !== $user->id) {
-            abort(403, 'Non puoi pagare questo ordine.');
-        }
 
         if ($order->status !== 'pending') {
             throw ValidationException::withMessages([

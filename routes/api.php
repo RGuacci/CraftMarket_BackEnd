@@ -45,5 +45,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // pagamento simulato   
     Route::post('/checkout', [OrderController::class, 'checkout']);
-    Route::post('/orders/{order}/pay', [OrderController::class, 'pay']);
+    
+    Route::get('/orders/{order}', [OrderController::class, 'show'])
+        ->middleware('can:view,order');
+
+    Route::post('/orders/{order}/pay', [OrderController::class, 'pay'])
+        ->middleware('can:pay,order');
 });

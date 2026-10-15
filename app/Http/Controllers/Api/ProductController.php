@@ -17,7 +17,44 @@ class ProductController extends Controller
      */
     public function index()
     {
-        $products = Product::with('user', 'categories', 'images')->latest()->paginate(12);
+        $perPage = min(
+            max((int) request('per_page', 12), 1),
+            50
+        );
+
+        $query = Product::with(['user', 'categories', 'images']);
+
+        // Filtro per parola
+        $query = Product::with(['user', 'categories', 'images']);
+
+        if ($search = request('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        //Filtro per categoria
+        if ($category = request('category')) {
+            $query->whereHas('categories', function ($q) use ($category) {
+                $q->where('categories.id', $category);
+            });
+        }
+
+        //Ordinamento
+        switch (request('sort', 'latest')) {
+            case 'price_asc':
+                $query->orderBy('price', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('price', 'desc');
+                break;
+            default:
+                $query->latest();
+                break;
+        }
+
+        $products = $query->paginate($perPage)->withQueryString();
         return ProductResource::collection($products);
     }
 

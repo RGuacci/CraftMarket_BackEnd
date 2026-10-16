@@ -11,7 +11,7 @@ test('un utente non può vedere un ordine altrui', function () {
     // l'utente estraneo chiede quell'ordine
     $response = $this->actingAs($other)->getJson("/api/orders/{$order->id}");
 
-    // Assert: deve essere rifiutato
+    //deve essere rifiutato
     $response->assertForbidden();
 
 });

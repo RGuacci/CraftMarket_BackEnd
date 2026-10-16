@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\SellerRequestController;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -45,10 +46,31 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // pagamento simulato   
     Route::post('/checkout', [OrderController::class, 'checkout']);
-    
+
     Route::get('/orders/{order}', [OrderController::class, 'show'])
         ->middleware('can:view,order');
 
     Route::post('/orders/{order}/pay', [OrderController::class, 'pay'])
         ->middleware('can:pay,order');
+
+    //Rotta per invio candidatura
+    Route::post('/seller-requests', [SellerRequestController::class, 'store']);
+
+    //Rotta per la visualizzazione di una candidatura
+    Route::get('/seller-requests/me', [SellerRequestController::class, 'myRequest',]);
+
+    //Rotte admin per gestire candidature
+    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+        Route::get('/seller-requests', [SellerRequestController::class, 'index']);
+    });
+
+    Route::patch('/seller-requests/{sellerRequest}/approve', [
+        SellerRequestController::class,
+        'approve',
+    ]);
+
+    Route::patch('/seller-requests/{sellerRequest}/reject', [
+        SellerRequestController::class,
+        'reject',
+    ]);
 });

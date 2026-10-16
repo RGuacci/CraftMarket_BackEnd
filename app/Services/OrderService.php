@@ -66,38 +66,25 @@ class OrderService
         });
     }
 
+
     public function processPayment(
         User $user,
         Order $order,
         string $method,
     ): Order {
-
-        if ($order->status !== 'pending') {
-            throw ValidationException::withMessages([
-                'order' => 'Questo ordine non può essere pagato.',
-            ]);
-        }
-
-        $paymentService = app(PaymentService::class);
-
-        $payment = $paymentService->process($method);
-
-        if ($payment['status'] === 'failed') {
-            $order->update(['status' => 'failed']);
-
-            return $order->refresh();
-        }
-
-        return DB::transaction(function () use ($order) {
+        return DB::transaction(function () use ($user, $order, $method) {
             $order = Order::whereKey($order->id)
+                ->where('user_id', $user->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($order->status !== 'pending') {
+            if (!in_array($order->status, ['pending', 'failed'], true)) {
                 throw ValidationException::withMessages([
                     'order' => 'Questo ordine non può essere pagato.',
                 ]);
             }
+
+            $order->load('orderItems');
 
             foreach ($order->orderItems as $item) {
                 $product = Product::whereKey($item->product_id)
@@ -109,12 +96,24 @@ class OrderService
                         'stock' => "Stock insufficiente per il prodotto {$item->product_id}.",
                     ]);
                 }
+            }
 
-                $product->decrement('stock', $item->quantity);
+            $paymentService = app(PaymentService::class);
+            $payment = $paymentService->process($method);
+
+            if ($payment['status'] !== 'succeeded') {
+                $order->update(['status' => 'failed']);
+
+                return $order->refresh()->load('orderItems');
+            }
+
+            foreach ($order->orderItems as $item) {
+                Product::whereKey($item->product_id)
+                    ->decrement('stock', $item->quantity);
             }
 
             $order->update(['status' => 'paid']);
-            // Rimuovo dal carrello soltanto i prodotti acquistati
+
             $productIds = $order->orderItems
                 ->pluck('product_id')
                 ->all();

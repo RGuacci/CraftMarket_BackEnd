@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
 
 class ProductController extends Controller
 {
@@ -61,20 +63,9 @@ class ProductController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-
-            'categories' => 'nullable|array',
-            'categories.*' => 'exists:categories,id|distinct',
-
-            'images' => 'nullable|array|max:5',
-            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp,gif,avif,bmp', 'max:5120',],
-        ]);
+        $data = $request->validated();
 
         $data['user_id'] = auth()->id();
         // Utilizzo un ciclo per controllare che lo slug sia unico, se non lo è aggiungo un numero progressivo
@@ -127,27 +118,9 @@ class ProductController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Product $product, Request $request)
+    public function update(Product $product, UpdateProductRequest $request)
     {
-        $data = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-
-            'categories' => 'nullable|array',
-            'categories.*' => 'exists:categories,id|distinct',
-
-            'images' => 'nullable|array|max:5',
-            'images.*' => [
-                'image',
-                'mimes:jpg,jpeg,png,webp,gif,avif,bmp',
-                'max:5120',
-            ],
-
-            'remove_images' => 'nullable|array',
-            'remove_images.*' => 'integer|distinct',
-        ]);
+        $data = $request->validated();
 
         // Separo i dati destinati alle altre tabelle.
         $categoriesProvided = array_key_exists('categories', $data);

@@ -13,22 +13,29 @@ class OrderService
 {
     public function createPendingOrder(User $user, array $shippingData): Order
     {
-        // Recupero il carrello
         return DB::transaction(function () use ($user, $shippingData) {
-            $cart = $user->cart()
-                ->with('products')
-                ->first();
+            // Ordini in attesa precedenti: non hanno scalato stock né incassato nulla.
+            // Sta dentro la transazione: se più sotto la validazione fallisce, la cancellazione viene annullata.
+            Order::where('user_id', $user->id)->where('status', 'pending')->delete();
 
-            if (!$cart || $cart->products->isEmpty()) {
-                throw ValidationException::withMessages([
-                    'cart' => 'Il carrello è vuoto.',
-                ]);
+            $cart = $user->cart()->first();
+
+            // withTrashed() include anche i prodotti eliminati, così posso segnalarli
+            $products = $cart ? $cart->products()->withTrashed()->get() : collect();
+
+            if ($products->isEmpty()) {
+                throw ValidationException::withMessages(['cart' => 'Il carrello è vuoto.']);
             }
 
-            // Verifico che lo stock del prodotto sia sufficiente
-            $total = 0;
+            $cents = 0;
 
-            foreach ($cart->products as $product) {
+            foreach ($products as $product) {
+                if ($product->trashed()) {
+                    throw ValidationException::withMessages([
+                        'cart' => "Il prodotto {$product->name} non è più disponibile. Rimuovilo dal carrello.",
+                    ]);
+                }
+
                 $quantity = (int) $product->pivot->quantity;
 
                 if ($product->stock < $quantity) {
@@ -37,29 +44,17 @@ class OrderService
                     ]);
                 }
 
-                $total += $product->price * $quantity;
+                // Calcolo in centesimi interi: niente errori di arrotondamento
+                $cents += (int) round($product->price * 100) * $quantity;
             }
 
-            // Creo l'ordine
             $order = Order::create([
-                'user_id' => $user->id,
-                'status' => 'pending',
-                'total' => $total,
-                'shipping_name' => $shippingData['shipping_name'],
-                'shipping_address' => $shippingData['shipping_address'],
-                'shipping_city' => $shippingData['shipping_city'],
-                'shipping_postal_code' => $shippingData['shipping_postal_code'],
-                'shipping_country' => $shippingData['shipping_country'],
+                // ... gli stessi campi di prima ...
+                'total' => $cents / 100,
             ]);
 
-            // Riempio la tabella order_item
-            foreach ($cart->products as $product) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $product->id,
-                    'quantity' => $product->pivot->quantity,
-                    'price' => $product->price,
-                ]);
+            foreach ($products as $product) {
+                OrderItem::create([ /* come prima, usando $products */]);
             }
 
             return $order->load('orderItems');

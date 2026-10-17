@@ -86,154 +86,101 @@ test('un pagamento riuscito scala lo stock una sola volta', function () {
 
 test('un ordine già pagato non può essere pagato una seconda volta', function () {
     $user = User::factory()->create();
-
-    $product = Product::factory()->create([
-        'stock' => 8,
-        'price' => 5.00,
-    ]);
-
-    $order = Order::factory()->for($user)->create([
-        'status' => 'paid',
-        'total' => 10.00,
-    ]);
-
-    $order->orderItems()->create([
-        'product_id' => $product->id,
-        'quantity' => 2,
-        'price' => 5.00,
-    ]);
+    [$order, $product] = pendingOrderWithItem($user, stock: 8, quantity: 2);
+    $order->update(['status' => 'paid']);
 
     $this->mock(PaymentService::class, function (MockInterface $mock) {
         $mock->shouldNotReceive('process');
     });
 
     $this->actingAs($user)
-        ->postJson("/api/orders/{$order->id}/pay", [
-            'method' => 'card',
-        ])
+        ->postJson("/api/orders/{$order->id}/pay", ['method' => 'card'])
         ->assertUnprocessable();
 
-    $this->assertDatabaseHas('orders', [
-        'id' => $order->id,
-        'status' => 'paid',
-    ]);
-
-    $this->assertDatabaseHas('products', [
-        'id' => $product->id,
-        'stock' => 8,
-    ]);
+    expect($order->fresh()->status)->toBe('paid');
+    expect($product->fresh()->stock)->toEqual(8);
 });
-
 
 test('un ordine con pagamento fallito può essere pagato al tentativo successivo', function () {
     $user = User::factory()->create();
-
-    $product = Product::factory()->create([
-        'stock' => 10,
-        'price' => 5.00,
-    ]);
-
-    $order = Order::factory()->for($user)->create([
-        'total' => 10.00,
-    ]);
-
-    $order->orderItems()->create([
-        'product_id' => $product->id,
-        'quantity' => 2,
-        'price' => 5.00,
-    ]);
+    [$order, $product] = pendingOrderWithItem($user, stock: 10, quantity: 2);
 
     $this->mock(PaymentService::class, function (MockInterface $mock) {
-        $mock->shouldReceive('process')
-            ->once()
-            ->with('card')
-            ->andReturn([
-                'method' => 'card',
-                'status' => 'failed',
-                'message' => 'Pagamento non riuscito.',
-            ]);
-
-        $mock->shouldReceive('process')
-            ->once()
-            ->with('card')
-            ->andReturn([
-                'method' => 'card',
-                'status' => 'succeeded',
-                'message' => 'Pagamento simulato riuscito.',
-            ]);
+        $mock->shouldReceive('process')->twice()->with('card')->andReturn(
+            ['method' => 'card', 'status' => 'failed', 'message' => 'Pagamento non riuscito.'],
+            ['method' => 'card', 'status' => 'succeeded', 'message' => 'Pagamento simulato riuscito.'],
+        );
     });
 
-    // Primo tentativo: fallisce.
+    // Primo tentativo: fallisce
     $this->actingAs($user)
-        ->postJson("/api/orders/{$order->id}/pay", [
-            'method' => 'card',
-        ])
+        ->postJson("/api/orders/{$order->id}/pay", ['method' => 'card'])
         ->assertOk();
 
-    $this->assertDatabaseHas('orders', [
-        'id' => $order->id,
-        'status' => 'failed',
-    ]);
+    expect($order->fresh()->status)->toBe('failed');
+    expect($product->fresh()->stock)->toEqual(10);
 
-    $this->assertDatabaseHas('products', [
-        'id' => $product->id,
-        'stock' => 10,
-    ]);
-
-    // Secondo tentativo: riesce sullo stesso ordine.
-    $this->postJson("/api/orders/{$order->id}/pay", [
-        'method' => 'card',
-    ])
+    // Secondo tentativo: riesce sullo stesso ordine
+    $this->postJson("/api/orders/{$order->id}/pay", ['method' => 'card'])
         ->assertOk();
 
-    $this->assertDatabaseHas('orders', [
-        'id' => $order->id,
-        'status' => 'paid',
-    ]);
-
-    $this->assertDatabaseHas('products', [
-        'id' => $product->id,
-        'stock' => 8,
-    ]);
+    expect($order->fresh()->status)->toBe('paid');
+    expect($product->fresh()->stock)->toEqual(8);
 });
 
 test('un pagamento con stock insufficiente non viene elaborato', function () {
     $user = User::factory()->create();
-
-    $product = Product::factory()->create([
-        'stock' => 1,
-        'price' => 5.00,
-    ]);
-
-    $order = Order::factory()->for($user)->create([
-        'total' => 10.00,
-    ]);
-
-    $order->orderItems()->create([
-        'product_id' => $product->id,
-        'quantity' => 2,
-        'price' => 5.00,
-    ]);
+    [$order, $product] = pendingOrderWithItem($user, stock: 1, quantity: 2);
 
     $this->mock(PaymentService::class, function (MockInterface $mock) {
         $mock->shouldNotReceive('process');
     });
 
     $this->actingAs($user)
-        ->postJson("/api/orders/{$order->id}/pay", [
-            'method' => 'card',
-        ])
+        ->postJson("/api/orders/{$order->id}/pay", ['method' => 'card'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors('stock');
 
-    $this->assertDatabaseHas('orders', [
-        'id' => $order->id,
-        'status' => 'pending',
-    ]);
-
-    $this->assertDatabaseHas('products', [
-        'id' => $product->id,
-        'stock' => 1,
-    ]);
+    expect($order->fresh()->status)->toBe('pending');
+    expect($product->fresh()->stock)->toEqual(1);
 });
 
+test('il pagamento è limitato a 10 richieste al minuto', function () {
+    $user = User::factory()->create();
+    [$order] = pendingOrderWithItem($user, stock: 5, quantity: 1);
+
+    // Un metodo non valido dà 422 subito, senza toccare il gestore: serve solo a consumare il limite
+    for ($i = 0; $i < 10; $i++) {
+        $this->actingAs($user)
+            ->postJson("/api/orders/{$order->id}/pay", ['method' => 'bitcoin']);
+    }
+
+    $this->actingAs($user)
+        ->postJson("/api/orders/{$order->id}/pay", ['method' => 'bitcoin'])
+        ->assertStatus(429);
+});
+
+function pendingOrderWithItem(
+    User $user,
+    int $stock = 5,
+    int $quantity = 1,
+    float $price = 5.00,
+): array {
+    $product = Product::factory()->create([
+        'stock' => $stock,
+        'price' => $price,
+    ]);
+
+    $order = Order::factory()->for($user)->create([
+        'status' => 'pending',
+        'total' => $price * $quantity,
+    ]);
+
+    $order->orderItems()->create([
+        'product_id' => $product->id,
+        'quantity' => $quantity,
+        'price' => $price,
+    ]);
+
+    return [$order, $product];
+}

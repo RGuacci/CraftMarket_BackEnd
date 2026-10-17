@@ -15,22 +15,28 @@ return [
     |
     */
 
-   'paths' => [
-    'api/*',
-    'sanctum/csrf-cookie',
-    'login',
-    'logout',
-    'register',
-    'forgot-password',
-    'reset-password',
-],
+    'paths' => [
+        'api/*',
+        'sanctum/csrf-cookie',
+        'login',
+        'logout',
+        'register',
+        'forgot-password',
+        'reset-password',
+    ],
+
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
 
 
     'allowed_methods' => ['*'],
 
     'allowed_origins' => [
-    'http://localhost:5173',
-],
+        'http://localhost:5173',
+    ],
 
     'allowed_origins_patterns' => [],
 

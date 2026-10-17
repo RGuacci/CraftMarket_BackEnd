@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SellerRequestController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -25,10 +26,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/seller/products', [ProductController::class, 'myProducts']);
 
     Route::post('/products', [ProductController::class, 'store'])
-        ->middleware('can:create,' . Product::class);
+        ->middleware('can:create,' . Product::class, 'throttle:uploads');
 
     Route::put('/products/{product}', [ProductController::class, 'update'])
-        ->middleware('can:update,product');
+        ->middleware('can:update,product', 'throttle:uploads');
 
     Route::delete('/products/{product}', [ProductController::class, 'destroy'])
         ->middleware('can:delete,product');
@@ -45,13 +46,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/orders/{order}', [OrderController::class, 'show']);
 
     // pagamento simulato   
-    Route::post('/checkout', [OrderController::class, 'checkout']);
+    Route::post('/checkout', [OrderController::class, 'checkout'])
+        ->middleware('throttle:orders');
 
     Route::get('/orders/{order}', [OrderController::class, 'show'])
         ->middleware('can:view,order');
 
     Route::post('/orders/{order}/pay', [OrderController::class, 'pay'])
-        ->middleware('can:pay,order');
+        ->middleware('can:pay,order', 'throttle:orders');
 
     //Rotta per invio candidatura
     Route::post('/seller-requests', [SellerRequestController::class, 'store']);

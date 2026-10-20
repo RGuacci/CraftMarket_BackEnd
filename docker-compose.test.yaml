@@ -1,0 +1,31 @@
+
+services:
+  app:
+    image: satisfy-app
+    container_name: satisfy-test
+    restart: unless-stopped
+
+    env_file:
+      - .env.docker
+
+    environment:
+      PORT: "8000"
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: "5432"
+
+    ports:
+      - "8001:8000"
+
+    networks:
+      - satisfy-network
+
+    command: >-
+      sh -c 'php artisan storage:link &&
+      exec php artisan serve --host=0.0.0.0
+      --port="$${PORT:-8000}"'
+
+networks:
+  satisfy-network:
+    external: true
+    name: craftmarket_default

@@ -5,7 +5,6 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\SellerRequestController;
-use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;

@@ -39,5 +39,14 @@ COPY . .
 
 RUN composer dump-autoload --optimize
 
+RUN mkdir -p \
+    storage/app/public \
+    storage/framework/cache \
+    storage/framework/sessions \
+    storage/framework/views \
+    storage/logs \
+    bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
 CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8000}

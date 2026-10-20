@@ -1,0 +1,14 @@
+services:
+  satisfy:
+    volumes:
+      - satisfy-data:/var/lib/postgresql/data 
+    image: postgres:17
+    environment:
+      POSTGRES_USER: raffaele
+      POSTGRES_PASSWORD: asdasdasd
+      POSTGRES_DB: satisfy
+    ports:
+      - "5432:5432" 
+         
+volumes:
+  satisfy-data:     

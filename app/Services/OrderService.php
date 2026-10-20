@@ -49,12 +49,23 @@ class OrderService
             }
 
             $order = Order::create([
-                // ... gli stessi campi di prima ...
+                'user_id' => $user->id,
+                'status' => 'pending',
                 'total' => $cents / 100,
+                'shipping_name' => $shippingData['shipping_name'],
+                'shipping_address' => $shippingData['shipping_address'],
+                'shipping_city' => $shippingData['shipping_city'],
+                'shipping_postal_code' => $shippingData['shipping_postal_code'],
+                'shipping_country' => $shippingData['shipping_country'],
             ]);
 
             foreach ($products as $product) {
-                OrderItem::create([ /* come prima, usando $products */]);
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $product->id,
+                    'quantity' => (int) $product->pivot->quantity,
+                    'price' => $product->price,
+                ]);
             }
 
             return $order->load('orderItems');

@@ -36,6 +36,8 @@ return [
 
     'allowed_origins' => [
         'http://localhost:5173',
+        'http://localhost:4173',
+        'https://satisfy-chi.vercel.app',
     ],
 
     'allowed_origins_patterns' => [],

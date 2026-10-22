@@ -24,8 +24,6 @@ class ProductController extends Controller
             50
         );
 
-        $query = Product::with(['user', 'categories', 'images']);
-
         // Filtro per parola
         $query = Product::with(['user', 'categories', 'images']);
 
@@ -91,7 +89,7 @@ class ProductController extends Controller
                 $product->categories()->sync($categories);
 
                 foreach ($images as $image) {
-                    $path = $image->store('products', 'public');
+                    $path = $image->store('products');
                     $storedPaths[] = $path;
 
                     $product->images()->create(['path' => $path]);
@@ -99,11 +97,12 @@ class ProductController extends Controller
                 return $product;
             });
         } catch (\Throwable $e) {
-            Storage::disk('public')->delete($storedPaths);
+            Storage::delete($storedPaths);
             throw $e;
         }
         $product->load(['user', 'images', 'categories']);
-        return response()->json($product, 201);
+
+        return (new ProductResource($product))->response()->setStatusCode(201);
     }
 
     /**
@@ -207,7 +206,7 @@ class ProductController extends Controller
 
                 // Salvo le nuove immagini.
                 foreach ($images as $image) {
-                    $path = $image->store('products', 'public');
+                    $path = $image->store('products');
 
                     if (!$path) {
                         throw new \RuntimeException(
@@ -227,17 +226,17 @@ class ProductController extends Controller
         } catch (\Throwable $e) {
             // Il rollback riguarda il database.
             // Rimuovo separatamente i nuovi file già salvati.
-            Storage::disk('public')->delete($storedPaths);
+            Storage::delete($storedPaths);
 
             throw $e;
         }
 
         // Elimino i vecchi file solo dopo il commit.
-        Storage::disk('public')->delete($pathsToDelete);
+        Storage::delete($pathsToDelete);
 
         $product->load(['user', 'images', 'categories']);
 
-        return response()->json($product);
+        return new ProductResource($product);
     }
     /**
      * Remove the specified resource from storage.
@@ -251,7 +250,7 @@ class ProductController extends Controller
 
             $product->forceDelete(); // il cascade pulisce immagini, carrelli e categorie
 
-            Storage::disk('public')->delete($paths); // i file solo dopo il commit
+            Storage::delete($paths); // i file solo dopo il commit
         }
 
         return response()->json(['message' => 'Prodotto eliminato correttamente.']);
@@ -260,7 +259,12 @@ class ProductController extends Controller
     // Recupero i prodotti collegati all'utente
     public function myProducts()
     {
-        $products = auth()->user()->products()->with(['categories', 'images'])->latest()->get();
-        return response()->json($products);
+        $products = auth()->user()
+            ->products()
+            ->with(['categories', 'images'])
+            ->latest()
+            ->get();
+
+        return ProductResource::collection($products);
     }
 }

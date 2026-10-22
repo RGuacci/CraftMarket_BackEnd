@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
@@ -17,16 +18,21 @@ class OrderController extends Controller
             ->get();
 
         return response()->json([
-            'orders' => $orders,
+            'orders' => OrderResource::collection($orders),
         ]);
     }
 
     public function show(Request $request, Order $order)
     {
+        abort_unless(
+            $order->user_id === $request->user()->id,
+            403
+        );
+
         $order->load('orderItems.product.images');
 
         return response()->json([
-            'order' => $order,
+            'order' => new OrderResource($order),
         ]);
     }
 

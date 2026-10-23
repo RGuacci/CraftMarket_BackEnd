@@ -1,58 +1,92 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Satisfy API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Satisfy è un piccolo e-commerce dove gli utenti possono acquistare uno o più articoli o, su richiesta, diventare venditori e cominciare a vendere.
 
-## About Laravel
+Questo progetto è l'API Laravel di un'applicazione React che ho sviluppato personalmente:
+👉 [Satisfy (front end)](https://github.com/RGuacci/Satisfy)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Funzionalità
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Login e registrazione con cookie di sessione, senza token salvati nel browser (**Fortify + Sanctum**)
+- Gestione di permessi e ruoli degli utenti: user, seller, admin (**Laravel Policies**)
+- CRUD completo dei prodotti, con caricamento e modifica delle immagini
+- Un carrello per aggiungere o rimuovere articoli da acquistare
+- Possibilità di acquistare uno o più articoli e visualizzarli nella propria pagina profilo (Il pagamento è simulato ed ha sempre successo)
+- Possibilità di chiedere agli admin di diventare venditori tramite un form
+- Diversi test strutturati e divisi per tipologia, pronti per essere lanciati (**Pest**) 
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Perché l'ho costruito
 
-## Learning Laravel
+Satisfy è il mio primo vero progetto indipendente da quando ho finito il bootcamp **Hackademy di Aulab** e, come tale, ha portato diverse sfide sul tavolo che ho dovuto affrontare.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Per la prima volta ho dovuto pensare a tutto senza qualcuno a darmi delle dritte: tutte le decisioni, dalla più piccola alla più grande, sono ricadute su di me. Più volte sono stato costretto a cambiare il codice per decisioni non proprio ottimali prese in precedenza. Ad esempio, nella parte finale del lavoro, dopo il deploy, ho dovuto fare parecchio per rendere le immagini persistenti: all'inizio costruivo l'URL delle immagini direttamente dal front end, quindi ho dovuto modificare la logica in Laravel e poi riscrivere gran parte del codice del front end ovunque ci fossero delle immagini. Questo mi ha insegnato perchè le immagini hanno bisogno di un servizio esterno e perchè non è corretto che sia il frontend a gestirle.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Per quanto riguarda la struttura, ho deciso di creare un progetto con front end e back end separati per vedere e studiare meglio il flusso e come i diversi pezzi comunicano tra loro. Questa scelta, soprattutto all'inizio, mi ha creato diverse difficoltà e mi ha fatto rendere conto di quanto lavoro Laravel nasconde dietro le quinte quando si lavora con le Blade o, in generale, con il front end sullo stesso dominio.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Stack
 
-## Agentic Development
+- **PHP 8.3+** (8.5 nell'immagine Docker) / **Laravel 13**
+- **Laravel Fortify** per login, registrazione e logout
+- **Laravel Sanctum** per l'autenticazione della SPA tramite cookie di sessione
+- **PostgreSQL** come database
+- **Cloudflare R2** per le immagini dei prodotti, tramite il driver S3 di Laravel (`league/flysystem-aws-s3-v3`)
+- **Pest** per i test
+- **Docker** e Docker Compose per l'ambiente locale e per il deploy
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Deploy
+
+È la prima volta che porto online un progetto con front end e back end separati, e molti di questi servizi li ho usati qui per la prima volta. Ogni pezzo vive su un servizio diverso:
+
+| Pezzo | Servizio | Perché |
+|---|---|---|
+| API Laravel | **Render** (container Docker) | Supporta il deploy da `Dockerfile` e ha un piano gratuito |
+| Database | **Neon** (PostgreSQL) | PostgreSQL gestito con piano gratuito, senza dover amministrare un server |
+| Immagini | **Cloudflare R2** | Il disco del container su Render non è persistente: a ogni nuovo deploy i file caricati andrebbero persi. Salvando le immagini su R2 sopravvivono ai deploy, e l'API restituisce al front end l'URL completo |
+| Front end React | **Vercel** | Gestito con un piano gratuito e redeploy automatico dopo eventuali modifiche |
+
+<!-- da riscrivere -->.
+
+## Avvio in locale
+
+L'unico requisito è avere **Docker** e **Docker Compose** installati: PHP, Composer e PostgreSQL girano dentro i container.
+
+1. Clona la repo:
+   ```bash
+   git clone https://github.com/RGuacci/Satisfy_API
+   cd Satisfy_API
+   ```
+2. Crea il file `.env`. I valori di default funzionano già con Docker, non serve modificarli:
+   ```bash
+   cp .env.example .env
+   ```
+3. Costruisci e avvia i container:
+   ```bash
+   docker compose up -d --build
+   ```
+4. Genera la chiave dell'applicazione:
+   ```bash
+   docker compose exec app php artisan key:generate
+   ```
+5. Crea le tabelle e i dati iniziali:
+   ```bash
+   docker compose exec app php artisan migrate --seed
+   ```
+6. Crea il link simbolico per le immagini:
+   ```bash
+   docker compose exec app php artisan storage:link
+   ```
+
+L'API risponde su `http://localhost:8000`. Per usare l'app completa, avvia anche il [front end](https://github.com/RGuacci/Satisfy).
+
+### Test
+
+L'immagine Docker installa solo le dipendenze di produzione, quindi per i test bisogna prima installare anche quelle di sviluppo (basta farlo una volta):
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+docker compose exec app composer install
+docker compose exec app php artisan test
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+I test usano un database SQLite in memoria, quindi non toccano i dati del database locale.
+ 
 
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

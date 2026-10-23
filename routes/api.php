@@ -42,8 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Ordini
     Route::get('/orders', [OrderController::class, 'index']);
-    Route::get('/orders/{order}', [OrderController::class, 'show']);
-
+    
     // pagamento simulato   
     Route::post('/checkout', [OrderController::class, 'checkout'])
         ->middleware('throttle:orders');
@@ -63,15 +62,15 @@ Route::middleware('auth:sanctum')->group(function () {
     //Rotte admin per gestire candidature
     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::get('/seller-requests', [SellerRequestController::class, 'index']);
+
+        Route::patch('/seller-requests/{sellerRequest}/approve', [
+            SellerRequestController::class,
+            'approve',
+        ]);
+
+        Route::patch('/seller-requests/{sellerRequest}/reject', [
+            SellerRequestController::class,
+            'reject',
+        ]);
     });
-
-    Route::patch('/seller-requests/{sellerRequest}/approve', [
-        SellerRequestController::class,
-        'approve',
-    ]);
-
-    Route::patch('/seller-requests/{sellerRequest}/reject', [
-        SellerRequestController::class,
-        'reject',
-    ]);
 });
